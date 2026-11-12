@@ -1,1 +1,2 @@
 # Pictures for the pre-study (optional)
+![alt text](workstream1-result.png.png)![alt text](01-warehouse-record-counts.png.png)![alt text](dashboard-query-results.png.png)![alt text](baseline-query-plan.png.png)![alt text](date-index-query-plan.png.png)![alt text](index-benchmark.png.png)![alt text](orderline-index-query-plan.png.png)![alt text](single-day-benchmark.png.png)![alt text](product-index-used.png.png)![alt text](date-function-index-ignored.png.png)![alt text](direct-date-index-used.png.png)

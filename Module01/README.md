@@ -76,3 +76,7 @@ Challenges:
 ## Reflection 1
 
 [Reflection 1](../Reflections/ref01.md)
+
+## SQLite Shell Tour
+
+The most useful dot-command was `.schema reading` because it shows the structure of a table, including its column names and data types.

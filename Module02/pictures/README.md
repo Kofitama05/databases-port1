@@ -1,1 +1,2 @@
-# Pictures for Module 1
+# Pictures for Module 2
+![alt text](<Entity vs attribute vs relationship MaintenanceJob.jpg>) ![alt text](<One-to-one (11) Machine and Nameplate.jpg>) ![alt text](<One-to-many (1N) Machine and Sensor.jpg>) ![alt text](<Many-to-many (MN) WorkOrder and Part.jpg>)
