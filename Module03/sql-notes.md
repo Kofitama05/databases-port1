@@ -63,6 +63,8 @@ QUERY PLAN
 
 5. Actual query results
 
+![alt text](<pictures/actual query results.png>)
+
 
 6. Correctness and verification
 
@@ -227,4 +229,103 @@ Result:
 SEARCH orders USING INDEX ix_orders_ordered_on (ordered_on=?)
 
 Observation: The ordinary index on ordered_on is used for direct equality, but not when ordered_on is wrapped in the date() function.
+
+
+## Task 3: The Injection Drill
+
+### 1. Payload used
+
+The SQL injection payload was:
+
+```sql
+' OR '1'='1
+```
+
+### 2. Actual output
+
+Normal lookup:
+`[(1, 'Customer 1')]`
+
+Injected query:
+`[(1, 'Customer 1'), (2, 'Customer 2'), (3, 'Customer 3')] ...`
+
+Safe parameterized query:
+`[]`
+
+### 3. Why bound parameters are safer than manual escaping
+
+Manually escaping or filtering apostrophes is not a reliable solution because SQL syntax depends on the context in which the input is used. Strings, numeric values and identifiers can have different rules, and different encodings can introduce additional problems. A manually written escaping function may fail to handle every case correctly.
+
+Bound parameters are safer because the SQL statement and the supplied values are kept separate. SQLite receives the SQL command with a placeholder (`?`) and treats the supplied value as data rather than executable SQL.
+
+The database driver handles the correct representation of the value. This prevents user input from changing the structure or meaning of the SQL statement.
+
+Parameters are intended for values, not table or column names. If identifiers must be selected dynamically, they should be checked against an explicit allowlist.
+
+**Conclusion:** Use bound parameters for user-supplied values instead of manually escaping or filtering characters.
+
+Task 4: One query, from algebra to plan
+
+1. SQL query
+
+I chose the 2025 dashboard query from the earlier tasks.
+
+SELECT c.city,
+       COUNT(DISTINCT c.customer_id) AS customers,
+       SUM(ol.qty * p.price) AS revenue
+FROM customer c
+JOIN orders o ON o.customer_id = c.customer_id
+JOIN order_line ol ON ol.order_id = o.order_id
+JOIN product p ON p.product_id = ol.product_id
+WHERE o.ordered_on >= '2025-01-01'
+  AND o.ordered_on < '2026-01-01'
+GROUP BY c.city
+ORDER BY revenue DESC;
+
+2. Relational algebra
+
+First, select orders from 2025:
+[O_{2025} =\sigma_{ordered_on \geq '2025-01-01' \land ordered_on < '2026-01-01'}(orders)]
+
+Next, join the four tables:
+[R =((customer \bowtie O_{2025})\bowtie order_line)\bowtie product]
+
+The join conditions are:
+
+customer.customer_id = orders.customer_id
+
+orders.order_id = order_line.order_id
+
+order_line.product_id = product.product_id
+
+Then group by city and calculate the aggregates:
+
+[G =\gamma_{city;\ COUNT(DISTINCT\ customer_id)\rightarrow customers;SUM(qty\times price)\rightarrow revenue}(R)]
+
+Finally, select the output columns:
+[\pi_{city,\ customers,\ revenue}(G)]
+
+3. Explanation of the operations
+Symbol               Operation          SQL equivalent             Purpose
+σ                    Selection             WHERE               Filters orders to 2025
+⋈                     Join              JOIN ...ON            Combines the four tables
+γ           Grouping and aggregation  GROUP BY, COUNT, SUM   Groups by city and calculates
+                                                              customers and revenue
+
+π                     Projection          SELECT       Chooses city, customers and revenue
+
+4. Confirming that SQL matches the algebra
+The SQL query follows the same logical operations as the relational algebra:
+The WHERE clause filters orders to the year 2025 (σ).
+The three JOIN operations connect the customer, orders, order_line and product tables (⋈).
+GROUP BY c.city groups the results by city, while COUNT(DISTINCT ...) and SUM(...) calculate the aggregates (γ).
+SELECT specifies the output columns (π).
+ORDER BY revenue DESC sorts the results by revenue from highest to lowest. Sorting is an additional operation beyond the four basic relational algebra operations used in this task.
+
+5. Why COUNT(DISTINCT) is necessary
+A customer can place several orders. If we use COUNT(c.customer_id), the same customer may be counted more than once.
+COUNT(DISTINCT c.customer_id) counts each customer only once within their city.
+Therefore, it gives the number of unique customers rather than the number of order records.
+
+Conclusion: The SQL query and relational algebra describe the same logical operations. Relational algebra explains the query mathematically, while SQL provides the executable implementation.
 
